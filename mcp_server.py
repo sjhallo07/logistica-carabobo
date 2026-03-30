@@ -5,6 +5,7 @@ import logging
 from core.mcp_bridge import RemoteMCPBridge
 import json
 from pathlib import Path
+import os
 
 app = FastAPI(title="Local MCP Server for Logistica Carabobo")
 bridge = RemoteMCPBridge()
@@ -88,6 +89,13 @@ async def web_search_google(payload: WebSearch):
 @app.post('/mcp/get_traffic_arc')
 async def get_traffic_arc(payload: SegmentQuery):
     try:
+        # If bridge is pointed at this same server (local testing), avoid recursive HTTP calls and return stubbed data
+        base = os.getenv('MCP_BASE_URL', '')
+        if 'localhost' in base or base == '' or base.startswith('http://localhost'):
+            # simple local stub
+            if payload.segment not in ['San Diego', 'Lomas del Este', 'Guacara', 'La Entrada']:
+                raise HTTPException(status_code=400, detail=f"Segmento inválido: {payload.segment}")
+            return {"segment": payload.segment, "traffic": "moderate", "updated": "2026-03-30T00:00:00Z"}
         return bridge.get_traffic_arc(payload.segment)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -95,6 +103,11 @@ async def get_traffic_arc(payload: SegmentQuery):
 @app.post('/mcp/verify_logistics_coupon')
 async def verify_logistics_coupon(payload: CouponQuery):
     try:
+        base = os.getenv('MCP_BASE_URL', '')
+        if 'localhost' in base or base == '' or base.startswith('http://localhost'):
+            # simple local verification stub
+            valid = payload.code.upper() in ['FIRST2026', 'PROMO10']
+            return {"code": payload.code, "valid": valid, "message": "local-stub"}
         return bridge.verify_logistics_coupon(payload.code)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
