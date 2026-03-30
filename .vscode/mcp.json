@@ -1,0 +1,108 @@
+{
+    "servers": {
+        "my-mcp-server-df3ec9ee": {
+            "url": "http://localhost:{port}/mcp",
+            "type": "http",
+            "allowedModels": [
+                "copilot/auto",
+                "copilotcli/gpt-5.4",
+                "copilot/gemini-2.5-pro",
+                "copilot/gemini-3-flash-preview",
+                "copilot/gemini-3.1-pro-preview",
+                "copilotcli/gpt-4.1",
+                "copilot/gpt-4.1",
+                "copilot/gpt-4o",
+                "copilotcli/gpt-5-mini",
+                "copilot/gpt-5-mini",
+                "copilotcli/gpt-5.1",
+                "copilot/gpt-5.1",
+                "copilotcli/gpt-5.1-codex",
+                "copilot/gpt-5.1-codex",
+                "copilotcli/gpt-5.1-codex-max",
+                "copilot/gpt-5.1-codex-max",
+                "copilotcli/gpt-5.1-codex-mini",
+                "copilot/gpt-5.1-codex-mini",
+                "copilotcli/gpt-5.2",
+                "copilot/gpt-5.2",
+                "copilotcli/gpt-5.2-codex",
+                "copilot/gpt-5.2-codex",
+                "copilotcli/gpt-5.3-codex",
+                "copilot/gpt-5.3-codex",
+                "copilot/gpt-5.4",
+                "copilotcli/gpt-5.4-mini",
+                "copilot/gpt-5.4-mini",
+                "copilotcli/grok-code-fast-1",
+                "copilot/grok-code-fast-1",
+                "copilot/oswe-vscode-prime"
+            ]
+        }
+    },
+    "scraping": {
+        "ignoreRobotsTxt": true,
+        "note": "Set to true to allow public scraping fallbacks when API tokens are not available. Ensure compliance with site TOS."
+    },
+    "inputs": [],
+    "tools": [
+        {
+            "name": "search_instagram_profile",
+            "description": "Search a specific Instagram profile for recent posts and extract candidate coupon codes",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "profile_url": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "default": 25
+                    }
+                },
+                "required": [
+                    "profile_url"
+                ]
+            }
+        },
+        {
+            "name": "search_instagram_hashtag",
+            "description": "Search recent Instagram posts by hashtag and extract candidate coupon codes",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hashtag": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "default": 25
+                    },
+                    "since": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "hashtag"
+                ]
+            }
+        },
+        {
+            "name": "web_search_google",
+            "description": "Perform a web search (Google) for the given query and return top results (title, snippet, link)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "default": 10
+                    }
+                },
+                "required": [
+                    "query"
+                ]
+            }
+        }
+    ]
+}
