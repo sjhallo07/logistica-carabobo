@@ -1,12 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+import logging
 from core.mcp_bridge import RemoteMCPBridge
 import json
 from pathlib import Path
 
 app = FastAPI(title="Local MCP Server for Logistica Carabobo")
 bridge = RemoteMCPBridge()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("mcp_server")
 
 # Load allowed models from .vscode/mcp.json if present
 def load_allowed_models() -> list:
@@ -24,15 +28,18 @@ ALLOWED_MODELS = load_allowed_models()
 class ProfileSearch(BaseModel):
     profile_url: str
     limit: Optional[int] = 25
+    model: Optional[str] = None
 
 class HashtagSearch(BaseModel):
     hashtag: str
     limit: Optional[int] = 25
     since: Optional[str] = None
+    model: Optional[str] = None
 
 class WebSearch(BaseModel):
     query: str
     limit: Optional[int] = 10
+    model: Optional[str] = None
 
 class SegmentQuery(BaseModel):
     segment: str
@@ -44,7 +51,8 @@ class CouponQuery(BaseModel):
 async def search_instagram_profile(payload: ProfileSearch):
     try:
         # optional model validation
-        model = getattr(payload, 'model', None)
+        model = payload.model
+        logger.info(f"search_instagram_profile called for %s (limit=%s) model=%s", payload.profile_url, payload.limit, model)
         if model and ALLOWED_MODELS and model not in ALLOWED_MODELS:
             raise HTTPException(status_code=400, detail=f"Model '{model}' is not allowed for this MCP server")
         result = await bridge.search_instagram_profile_public(payload.profile_url, limit=payload.limit)
@@ -55,7 +63,8 @@ async def search_instagram_profile(payload: ProfileSearch):
 @app.post('/mcp/search_instagram_hashtag')
 async def search_instagram_hashtag(payload: HashtagSearch):
     try:
-        model = getattr(payload, 'model', None)
+        model = payload.model
+        logger.info(f"search_instagram_hashtag called for %s (limit=%s) model=%s", payload.hashtag, payload.limit, model)
         if model and ALLOWED_MODELS and model not in ALLOWED_MODELS:
             raise HTTPException(status_code=400, detail=f"Model '{model}' is not allowed for this MCP server")
         # bridge.search_instagram_hashtag is sync; call directly
@@ -67,7 +76,8 @@ async def search_instagram_hashtag(payload: HashtagSearch):
 @app.post('/mcp/web_search_google')
 async def web_search_google(payload: WebSearch):
     try:
-        model = getattr(payload, 'model', None)
+        model = payload.model
+        logger.info(f"web_search_google called for query=%s (limit=%s) model=%s", payload.query, payload.limit, model)
         if model and ALLOWED_MODELS and model not in ALLOWED_MODELS:
             raise HTTPException(status_code=400, detail=f"Model '{model}' is not allowed for this MCP server")
         result = bridge.web_search_google(payload.query, limit=payload.limit)
