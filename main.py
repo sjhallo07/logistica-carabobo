@@ -15,5 +15,6 @@ if st.button("Enviar") and user_input:
     graph = build_graph()
     compiled_graph = graph.compile()
     state = st.session_state["state"]
-    state = compiled_graph.invoke(state, query_embedding=query_embedding)
-    st.write(state.messages[-1] if state.messages else "Sin respuesta.")
+    state["query_embedding"] = query_embedding
+    state = compiled_graph.invoke(state)
+    st.write(state["messages"][-1] if state.get("messages") else "Sin respuesta.")

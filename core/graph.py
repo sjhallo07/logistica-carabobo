@@ -4,6 +4,7 @@ from core.mcp_bridge import RemoteMCPBridge
 
 
 def retriever_node(state: dict, query_embedding):
+    query_embedding = state.get('query_embedding')
     results = match_documents(query_embedding)
     state['coupon_context'] = results.data if hasattr(results, 'data') else results
     return state

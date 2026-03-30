@@ -1,12 +1,19 @@
+# --- Core AI & Orchestration ---
 langchain>=0.3.0
 langchain-openai>=0.2.0
 langgraph>=0.2.10
+
+# --- Database & Vector Store (Supabase/pgvector) ---
 supabase>=2.7.0
 vecs>=0.4.0
 postgrest>=0.18.0
+
+# --- Model Context Protocol (MCP) & Networking ---
 mcp>=1.0.0
 httpx>=0.27.0
 sse-starlette>=2.1.0
+
+# --- UI & Environment ---
 streamlit>=1.38.0
 python-dotenv>=1.0.1
 pydantic>=2.9.0
