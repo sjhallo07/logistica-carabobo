@@ -48,7 +48,15 @@ if st.button("Enviar") and user_input:
                 try:
                     res = bridge.search_instagram_profile(profile_url, limit=limit)
                     st.success("Búsqueda completada")
-                    st.json(res)
+                    results = res.get("results", []) if isinstance(res, dict) else []
+                    if results:
+                        st.dataframe(results)
+                        if st.button("Guardar resultados en Supabase", key="save_profile_btn"):
+                            from core.database import save_instagram_coupons
+                            save_res = save_instagram_coupons(results, source="profile", source_id=profile_url)
+                            st.write(save_res)
+                    else:
+                        st.info("No se encontraron códigos en los posts.")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
@@ -59,7 +67,15 @@ if st.button("Enviar") and user_input:
                 try:
                     res = bridge.search_instagram_hashtag(hashtag, limit=limit)
                     st.success("Búsqueda completada")
-                    st.json(res)
+                    results = res.get("results", []) if isinstance(res, dict) else []
+                    if results:
+                        st.dataframe(results)
+                        if st.button("Guardar resultados en Supabase", key="save_hashtag_btn"):
+                            from core.database import save_instagram_coupons
+                            save_res = save_instagram_coupons(results, source="hashtag", source_id=hashtag)
+                            st.write(save_res)
+                    else:
+                        st.info("No se encontraron códigos con ese hashtag.")
                 except Exception as e:
                     st.error(f"Error: {e}")
 

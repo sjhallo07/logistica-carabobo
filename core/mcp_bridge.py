@@ -12,8 +12,27 @@ IG_BUSINESS_ID = os.getenv("IG_BUSINESS_ID")
 IG_API_VERSION = os.getenv("IG_API_VERSION", "v17.0")
 
 class RemoteMCPBridge:
-    # Use env override for local testing; default to local MCP server if present
-    BASE_URL = os.getenv("MCP_BASE_URL", "http://localhost:9000/mcp")
+    # Determine MCP endpoint from environment:
+    # Priority: MCP_BASE_URL env -> derive from SUPABASE_URL env -> default to local MCP
+    _env_mcp = os.getenv("MCP_BASE_URL")
+    if _env_mcp:
+        BASE_URL = _env_mcp
+    else:
+        # If SUPABASE_URL is set (e.g. https://<project_ref>.supabase.co) auto-construct the MCP proxy URL
+        _supabase = os.getenv("SUPABASE_URL")
+        if _supabase:
+            # extract project ref from host
+            try:
+                # remove scheme
+                host = _supabase.split("//")[-1]
+                project_ref = host.split('.')[0]
+                BASE_URL = f"https://mcp.supabase.com/mcp?project_ref={project_ref}&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"
+            except Exception:
+                BASE_URL = "http://localhost:9000/mcp"
+        else:
+            # Use MCP_PORT or PORT env var if provided, otherwise default to 9000
+            _port = os.getenv("MCP_PORT") or os.getenv("PORT") or "9000"
+            BASE_URL = f"http://localhost:{_port}/mcp"
 
     ALLOWED_SEGMENTS = ["San Diego", "Lomas del Este", "Guacara", "La Entrada"]
 

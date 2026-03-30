@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_API_URL = os.getenv("SUPABASE_API_URL")
 
 # Try to import supabase client; if unavailable (e.g., local dev without deps),
 # provide lightweight stubs so tests can run without external dependencies.
@@ -18,6 +19,20 @@ try:
             "metadata": metadata,
             "embedding": embedding
         }).execute()
+
+    def save_instagram_coupons(coupons: List[Dict[str, Any]], source: str, source_id: str = None):
+        # coupons: list of {permalink, timestamp, codes, caption}
+        rows = []
+        for c in coupons:
+            rows.append({
+                "source": source,
+                "source_id": source_id,
+                "permalink": c.get("permalink"),
+                "timestamp": c.get("timestamp"),
+                "codes": c.get("codes"),
+                "caption": c.get("caption")
+            })
+        return supabase.table("instagram_coupons").insert(rows).execute()
 
     def match_documents(query_embedding: List[float], match_threshold: float = 0.75, match_count: int = 5):
         return supabase.rpc("match_documents", {
@@ -37,3 +52,34 @@ except Exception:
     def match_documents(query_embedding: List[float], match_threshold: float = 0.75, match_count: int = 5):
         # Return empty list as default when no DB is available.
         return []
+
+    def save_instagram_coupons(coupons: List[Dict[str, Any]], source: str, source_id: str = None):
+        # Stub: just return input for local/dev
+        # If SUPABASE_API_URL is provided, try to use the REST Data API as a fallback
+        if SUPABASE_API_URL and SUPABASE_KEY:
+            try:
+                import json
+                import httpx
+                rows = []
+                for c in coupons:
+                    rows.append({
+                        "source": source,
+                        "source_id": source_id,
+                        "permalink": c.get("permalink"),
+                        "timestamp": c.get("timestamp"),
+                        "codes": c.get("codes"),
+                        "caption": c.get("caption")
+                    })
+                url = f"{SUPABASE_API_URL.rstrip('/')}/rest/v1/instagram_coupons"
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation"
+                }
+                resp = httpx.post(url, headers=headers, content=json.dumps(rows), timeout=10.0)
+                resp.raise_for_status()
+                return {"status": "inserted", "rows": resp.json()}
+            except Exception as e:
+                return {"status": "error", "error": str(e), "stub_rows": coupons}
+        return {"status": "stubbed", "rows": coupons, "source": source, "source_id": source_id}
