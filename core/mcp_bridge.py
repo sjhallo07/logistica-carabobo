@@ -12,7 +12,8 @@ IG_BUSINESS_ID = os.getenv("IG_BUSINESS_ID")
 IG_API_VERSION = os.getenv("IG_API_VERSION", "v17.0")
 
 class RemoteMCPBridge:
-    BASE_URL = "http://api.logistica-carabobo.io/mcp"
+    # Use env override for local testing; default to local MCP server if present
+    BASE_URL = os.getenv("MCP_BASE_URL", "http://localhost:9000/mcp")
 
     ALLOWED_SEGMENTS = ["San Diego", "Lomas del Este", "Guacara", "La Entrada"]
 
