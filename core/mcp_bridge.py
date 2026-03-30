@@ -36,10 +36,15 @@ class RemoteMCPBridge:
             return []
         candidates = []
         # Look for explicit patterns like 'code: ABC123' or 'cupón ABC123'
-        patterns = [r'(?i)\\b(?:code|cup[oó]n|promo|descuento)[:\\s-]*([A-Z0-9]{4,12})\\b',
-                    r'\\b([A-Z0-9]{5,12})\\b']
+        # patterns: explicit key words followed by code, or standalone alphanumeric tokens 5-12 chars
+        # Require at least one digit in the fallback token to avoid capturing common words
+        patterns = [r"\b(?:code|cup[oó]n|promo|descuento)[:\s-]*([A-Z0-9]{4,12})\b",
+                r"\b(?=[A-Z0-9]*\d)[A-Z0-9]{5,12}\b"]
         for pat in patterns:
-            for m in re.findall(pat, text):
+            for m in re.findall(pat, text, flags=re.IGNORECASE):
+                # m may be a tuple if groups; ensure it's a string
+                if isinstance(m, tuple):
+                    m = m[0]
                 candidates.append(m)
         # unique
         return list(dict.fromkeys([c.upper() for c in candidates]))
