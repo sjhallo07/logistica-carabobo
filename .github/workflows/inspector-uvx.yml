@@ -1,0 +1,25 @@
+name: Run MCP Inspector (uvx)
+
+on:
+    workflow_dispatch:
+
+jobs:
+    inspector:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+
+            - name: Install inspector dependencies
+              run: |
+                  npm ci --no-audit || true
+                  npm install @modelcontextprotocol/inspector lru-cache --no-audit
+
+            - name: Run inspector (uvx)
+              run: |
+                  npx @modelcontextprotocol/inspector uvx mcp-server-git --repository "${{ github.workspace }}"
