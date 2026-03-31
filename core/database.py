@@ -34,6 +34,13 @@ try:
             })
         return supabase.table("instagram_coupons").insert(rows).execute()
 
+    def save_coupon(coupon: Dict[str, Any]):
+        """Save a single coupon record into a relational table called 'coupons' using Supabase client."""
+        try:
+            return supabase.table("coupons").insert(coupon).execute()
+        except Exception as e:
+            return {"status": "error", "error": str(e), "coupon": coupon}
+
     def match_documents(query_embedding: List[float], match_threshold: float = 0.75, match_count: int = 5):
         return supabase.rpc("match_documents", {
             "query_embedding": query_embedding,
