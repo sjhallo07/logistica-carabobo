@@ -42,11 +42,17 @@ try:
             return {"status": "error", "error": str(e), "coupon": coupon}
 
     def match_documents(query_embedding: List[float], match_threshold: float = 0.75, match_count: int = 5):
-        return supabase.rpc("match_documents", {
-            "query_embedding": query_embedding,
-            "match_threshold": match_threshold,
-            "match_count": match_count
-        }).execute()
+        try:
+            # Supabase RPC expects positional args depending on the function signature.
+            # Try calling with named params (some setups expect a single json param too).
+            return supabase.rpc("match_documents", {
+                "match_count": match_count,
+                "match_threshold": match_threshold,
+                "query_embedding": query_embedding
+            }).execute()
+        except Exception as e:
+            # Graceful fallback: return empty result with error info so caller can handle it.
+            return {"status": "error", "error": str(e), "hint": "Ensure the SQL function public.match_documents(...) exists in Supabase. See sql/create_match_documents.sql in the repo."}
 
 except Exception:
     # Fallback stubs for environments without supabase installed.
