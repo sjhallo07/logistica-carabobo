@@ -48,6 +48,15 @@ class SegmentQuery(BaseModel):
 class CouponQuery(BaseModel):
     code: str
 
+
+class CouponCreate(BaseModel):
+    code: str
+    place: Optional[str] = None
+    business: Optional[str] = None
+    address: Optional[str] = None
+    expiration: Optional[str] = None
+    source: Optional[str] = "manual"
+
 @app.post('/mcp/search_instagram_profile')
 async def search_instagram_profile(payload: ProfileSearch):
     try:
@@ -115,3 +124,23 @@ async def verify_logistics_coupon(payload: CouponQuery):
 @app.get('/mcp/health')
 async def health():
     return {"status": "ok"}
+
+
+@app.post('/mcp/add_coupon')
+async def add_coupon(payload: CouponCreate):
+    try:
+        # Delegate to database layer to persist the coupon
+        from core.database import save_coupon
+
+        record = {
+            "code": payload.code,
+            "place": payload.place,
+            "business": payload.business,
+            "address": payload.address,
+            "expiration": payload.expiration,
+            "source": payload.source
+        }
+        res = save_coupon(record)
+        return {"status": "ok", "result": res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

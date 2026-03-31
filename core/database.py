@@ -83,3 +83,25 @@ except Exception:
             except Exception as e:
                 return {"status": "error", "error": str(e), "stub_rows": coupons}
         return {"status": "stubbed", "rows": coupons, "source": source, "source_id": source_id}
+
+    def save_coupon(coupon: Dict[str, Any]):
+        """Save a single coupon record into a relational table called 'coupons'.
+        Expected fields: code, place, business, address, expiration, source
+        """
+        try:
+            if SUPABASE_API_URL and SUPABASE_KEY:
+                import json
+                import httpx
+                url = f"{SUPABASE_API_URL.rstrip('/')}/rest/v1/coupons"
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=representation"
+                }
+                resp = httpx.post(url, headers=headers, content=json.dumps([coupon]), timeout=10.0)
+                resp.raise_for_status()
+                return {"status": "inserted", "rows": resp.json()}
+        except Exception as e:
+            return {"status": "error", "error": str(e), "coupon": coupon}
+        return {"status": "stubbed", "coupon": coupon}

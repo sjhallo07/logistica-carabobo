@@ -50,6 +50,12 @@ class RemoteMCPBridge:
         resp.raise_for_status()
         return resp.json()
 
+    def add_coupon(self, coupon: Dict[str, Any]) -> Dict[str, Any]:
+        """Post a coupon record to the MCP add_coupon endpoint."""
+        resp = httpx.post(f"{self.BASE_URL}/add_coupon", json=coupon, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+
     # ----- Instagram / Web search helpers -----
     def _extract_coupons_from_text(self, text: str):
         if not text:
