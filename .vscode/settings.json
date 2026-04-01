@@ -80,5 +80,6 @@
     "github.copilot.chat.agentHistorySummarizationForceGpt41": true,
     "github.copilot.chat.agentHistorySummarizationWithPromptCache": true,
     "github.copilot.chat.anthropic.promptCaching.extendedTtl": true,
-    "terminal.integrated.developer.devMode": true
+    "terminal.integrated.developer.devMode": true,
+    "python.terminal.useEnvFile": true
 }

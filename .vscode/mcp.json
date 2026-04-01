@@ -1,9 +1,38 @@
 {
 	"servers": {
-		"my-mcp-server-df3ec9ee": {
-			"url": "http://localhost:6274/mcp",
-			"type": "http"
+		"logisticaStudioLocal": {
+			"type": "http",
+			"url": "${input:localMcpUrl}"
+		},
+		"supabaseRemote": {
+			"type": "http",
+			"url": "https://mcp.supabase.com/mcp?project_ref=${input:supabaseProjectRef}&features=${input:supabaseFeatures}",
+			"headers": {
+				"Authorization": "Bearer ${input:supabaseAccessToken}"
+			}
 		}
 	},
-	"inputs": [ ]
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "localMcpUrl",
+			"description": "Local MCP Studio URL (example: http://localhost:6274/mcp)"
+		},
+		{
+			"type": "promptString",
+			"id": "supabaseProjectRef",
+			"description": "Supabase project ref for the remote MCP server"
+		},
+		{
+			"type": "promptString",
+			"id": "supabaseAccessToken",
+			"description": "Supabase personal access token for the remote MCP server",
+			"password": true
+		},
+		{
+			"type": "promptString",
+			"id": "supabaseFeatures",
+			"description": "Comma-separated Supabase MCP features (example: database,docs,storage,functions,development)"
+		}
+	]
 }

@@ -2,6 +2,8 @@
     "recommendations": [
         "mtxr.sqltools",
         "metabob.metabob",
-        "supabase.vscode-supabase-extension"
+        "supabase.vscode-supabase-extension",
+        "davidanson.vscode-markdownlint",
+        "docsmsft.docs-markdown"
     ]
 }
