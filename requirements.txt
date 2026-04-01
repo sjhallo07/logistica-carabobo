@@ -19,3 +19,21 @@ python-dotenv>=1.0.1
 pydantic>=2.9.0
 fastapi>=0.95.0
 uvicorn[standard]>=0.22.0
+
+# Optional STT/TTS and audio helpers (install only if you need voice features)
+SpeechRecognition>=3.8.1
+gTTS>=2.3.0
+pyttsx3>=2.90
+pydub>=0.25.1
+ 
+# Vector + multimodal
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.2
+transformers>=4.50.0
+ftfy>=6.1.1
+torch>=2.2.0
+torchvision>=0.16.0
+pillow>=10.0.0
+beautifulsoup4>=4.12.3
+selenium>=4.29.0
+webdriver-manager>=4.0.2
