@@ -1,11 +1,13 @@
 import sqlite3
 import json
+from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 DB_PATH = "./data/events.db"
 
 def _get_conn():
+    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
     return conn
