@@ -7,6 +7,7 @@ from typing import List, Optional, Dict, Any, Tuple
 
 import httpx
 from dotenv import load_dotenv
+from .query_router import QueryRouter, MAX_RADIUS_KM
 
 # Optional imports for STT/TTS — used only if available
 try:
@@ -77,6 +78,7 @@ class ChatbotManager:
     def __init__(self):
         # In a real app you'd load promotions from Supabase/pgvector + metadata table.
         self.promotions: List[Promotion] = []
+        self.router = QueryRouter()
         self._load_sample_promotions()
 
     def _load_sample_promotions(self):
@@ -93,6 +95,7 @@ class ChatbotManager:
 
     def find_promotions(self, query_text: str = "", gps: Optional[Tuple[float, float]] = None, radius_km: float = 50.0, country: Optional[str] = None, worldwide: bool = False, expiring_within_hours: Optional[float] = None, limit: int = 10) -> List[Dict[str, Any]]:
         now = datetime.now(timezone.utc)
+        radius_km = min(radius_km, MAX_RADIUS_KM)
         results: List[Tuple[Promotion, float]] = []
         for p in self.promotions:
             # expiry filter
@@ -165,12 +168,33 @@ class ChatbotManager:
         Process a text query synchronously. Returns a dict with promotions and a short assistant reply.
         """
         timestamp = datetime.now(timezone.utc).isoformat()
-        matches = self.find_promotions(query_text=text, gps=gps, country=country, worldwide=worldwide, expiring_within_hours=expiring_within_hours, limit=limit)
+        decision = self.router.route_query(text, country=country or "VE", radius_miles=100.0)
+        matches = self.find_promotions(
+            query_text=text,
+            gps=gps,
+            radius_km=MAX_RADIUS_KM,
+            country=decision.country,
+            worldwide=worldwide,
+            expiring_within_hours=expiring_within_hours,
+            limit=limit,
+        )
         # Prepare a small prompt for LLM (non-blocking call left to the caller)
-        prompt = f"User query (timestamp={timestamp}): {text}\nFound {len(matches)} matches: {json.dumps(matches)}\nRespond concisely with suggestions and actions the user can take."
+        prompt = (
+            f"User query (timestamp={timestamp}): {text}\n"
+            f"Routing decision: should_call_mcp={decision.should_call_mcp}, keywords={decision.matched_keywords}, codes={decision.extracted_codes}, country={decision.country}, radius_miles={decision.radius_miles}\n"
+            f"Found {len(matches)} matches: {json.dumps(matches)}\n"
+            "Respond naturally in Spanish by default for Venezuela, but switch to English if the user asks in English."
+        )
         # For simplicity we will not await call_llm here (to keep sync API). Caller can call async LLM separately.
         return {
             "timestamp": timestamp,
+            "routing": {
+                "should_call_mcp": decision.should_call_mcp,
+                "matched_keywords": decision.matched_keywords,
+                "codes": decision.extracted_codes,
+                "country": decision.country,
+                "radius_miles": decision.radius_miles,
+            },
             "matches": matches,
             "prompt_for_llm": prompt,
         }
@@ -197,7 +221,8 @@ class ChatbotManager:
         Returns path to written file.
         """
         if gTTS is not None:
-            tts = gTTS(text=text, lang="en")
+            lang = "es" if any(token in text.lower() for token in ["promoción", "descuento", "cupón", "venezuela", "valencia"]) else "en"
+            tts = gTTS(text=text, lang=lang)
             tts.save(out_path)
             return out_path
         if pyttsx3 is not None:
