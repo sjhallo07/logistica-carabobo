@@ -1,46 +1,9 @@
 {
 	"servers": {
 		"my-mcp-server-df3ec9ee": {
-			"url": "http://localhost:{port}/mcp",
-			"type": "http",
-			"allowedModels": [
-				"copilot/auto",
-				"copilotcli/gpt-5.4",
-				"copilot/gemini-2.5-pro",
-				"copilot/gemini-3-flash-preview",
-				"copilot/gemini-3.1-pro-preview",
-				"copilotcli/gpt-4.1",
-				"copilot/gpt-4.1",
-				"copilot/gpt-4o",
-				"copilotcli/gpt-5-mini",
-				"copilot/gpt-5-mini",
-				"copilotcli/gpt-5.1",
-				"copilot/gpt-5.1",
-				"copilotcli/gpt-5.1-codex",
-				"copilot/gpt-5.1-codex",
-				"copilotcli/gpt-5.1-codex-max",
-				"copilot/gpt-5.1-codex-max",
-				"copilotcli/gpt-5.1-codex-mini",
-				"copilot/gpt-5.1-codex-mini",
-				"copilotcli/gpt-5.2",
-				"copilot/gpt-5.2",
-				"copilotcli/gpt-5.2-codex",
-				"copilot/gpt-5.2-codex",
-				"copilotcli/gpt-5.3-codex",
-				"copilot/gpt-5.3-codex",
-				"copilot/gpt-5.4",
-				"copilotcli/gpt-5.4-mini",
-				"copilot/gpt-5.4-mini",
-				"copilotcli/grok-code-fast-1",
-				"copilot/grok-code-fast-1",
-				"copilot/oswe-vscode-prime"
-			]
-		},
-		"supabase": {
-			"type": "http",
-			"url": "https://mcp.supabase.com/mcp?project_ref=picfkguawkzhbdvagcbi&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"
-
+			"url": "http://localhost:6274/mcp",
+			"type": "http"
 		}
 	},
-	"inputs": []
+	"inputs": [ ]
 }

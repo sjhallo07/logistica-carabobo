@@ -24,7 +24,10 @@ def load_allowed_models() -> list:
     except Exception:
         return []
 
-ALLOWED_MODELS = load_allowed_models()
+ALLOWED_MODELS = [m.strip() for m in os.getenv("ALLOWED_MODELS", "").split(",") if m.strip()]
+
+def model_allowed(name: str) -> bool:
+    return not ALLOWED_MODELS or name in ALLOWED_MODELS
 
 class ProfileSearch(BaseModel):
     profile_url: str

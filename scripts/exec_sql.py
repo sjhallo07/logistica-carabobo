@@ -9,13 +9,17 @@ if not dsn:
 
 SQL_FILE = os.path.join(os.path.dirname(__file__), '..', 'sql', 'create_match_documents.sql')
 
+sql_file_path = os.path.abspath(SQL_FILE)
+
 with psycopg2.connect(dsn) as conn:
     with conn.cursor() as cur:
-        with open(SQL_FILE, 'r', encoding='utf-8') as f:
         try:
             with open(sql_file_path, 'r', encoding='utf-8') as f:
-                cur.execute(f.read())
+                sql = f.read()
+            cur.execute(sql)
             conn.commit()
+            print(f"Executed SQL file: {sql_file_path}")
         except psycopg2.Error as e:
             conn.rollback()
-            raise RuntimeError(f"Error executing SQL from '{sql_file_path}': {e}") from e
+            print(f"Error executing SQL from '{sql_file_path}': {e}")
+            raise
