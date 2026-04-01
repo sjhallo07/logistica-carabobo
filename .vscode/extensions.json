@@ -1,5 +1,7 @@
 {
     "recommendations": [
-        "mtxr.sqltools"
+        "mtxr.sqltools",
+        "metabob.metabob",
+        "supabase.vscode-supabase-extension"
     ]
 }
