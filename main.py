@@ -10,6 +10,15 @@ st.title("Logística & Cupones Carabobo (2026)")
 
 bridge = RemoteMCPBridge()
 
+# --- MCP / Hugging Face quick link ---
+import streamlit.components.v1 as components
+st.markdown("### Conectar con MCP (Hugging Face)")
+mcplink = "https://huggingface.co/mcp?login"
+if st.button("Abrir inicio de sesión MCP (Hugging Face)", key="open_mcp_login"):
+    # open link in new tab via a tiny HTML snippet
+    components.html(f'<script>window.open("{mcplink}", "_blank");</script>')
+st.markdown("Si estás desplegando en Hugging Face Spaces, añade la variable de entorno `MCP_BASE_URL` con el valor `https://huggingface.co/mcp?login` en Settings → Environment variables.")
+
 if "state" not in st.session_state:
     st.session_state["state"] = {"messages": [], "coupon_context": None, "tool_outputs": {}}
 

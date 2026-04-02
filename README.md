@@ -65,6 +65,23 @@ SUPABASE_KEY=<your-supabase-key>
 
 If `IG_ACCESS_TOKEN` and `IG_BUSINESS_ID` are not set, the MCP server will return stubbed/scraped results depending on availability.
 
+## Docker registry / CI notes
+
+If you need to push Docker images from CI or perform a docker login in a script, set these environment variables (for example in your CI secrets or Hugging Face Spaces environment variables):
+
+```
+DOCKER_USERNAME=your_docker_username
+DOCKER_PAT=your_docker_personal_access_token_or_password
+```
+
+To login non-interactively in a shell script:
+
+```bash
+echo "$DOCKER_PAT" | docker login -u "$DOCKER_USERNAME" --password-stdin
+```
+
+Hugging Face Spaces does not require Docker Hub credentials to build a Docker-based Space (it builds the image on HF infra), but CI flows that push images to external registries will need the above credentials.
+
 ## Example usage (curl)
 
 Search Instagram profile (public fallback):

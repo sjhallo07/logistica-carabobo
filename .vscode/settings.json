@@ -81,5 +81,11 @@
     "github.copilot.chat.agentHistorySummarizationWithPromptCache": true,
     "github.copilot.chat.anthropic.promptCaching.extendedTtl": true,
     "terminal.integrated.developer.devMode": true,
-    "python.terminal.useEnvFile": true
+    "python.terminal.useEnvFile": true,
+    "sixth.telegram.enabled": true,
+    "editor.formatOnSave": true,
+    "chat.statusWidget.anonymous": true,
+    "terminal.integrated.enableWin32InputMode": true,
+    "containers.commands.attach": "${containerCommand} exec -it ${containerId} ${shellCommand}",
+    "claudeCode.useTerminal": true
 }

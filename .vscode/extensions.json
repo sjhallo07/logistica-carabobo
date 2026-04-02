@@ -4,6 +4,8 @@
         "metabob.metabob",
         "supabase.vscode-supabase-extension",
         "davidanson.vscode-markdownlint",
-        "docsmsft.docs-markdown"
+        "docsmsft.docs-markdown",
+        "sixth.sixth-ai",
+        "anthropic.claude-code"
     ]
 }
