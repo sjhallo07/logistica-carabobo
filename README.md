@@ -1,3 +1,13 @@
+---
+title: Marcos Mora Chatbot Multimodal
+emoji: 🚗
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8501
+pinned: false
+---
+
 # Logistica Carabobo — Local MCP Usage
 
 This project includes a local MCP (Meta/Model Control Plane) HTTP server and client configuration to allow searching Instagram profiles/hashtags and performing web searches as a fallback.

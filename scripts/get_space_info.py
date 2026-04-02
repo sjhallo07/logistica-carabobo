@@ -1,11 +1,18 @@
-from huggingface_hub import HfApi
-import os, json
+import json
+import os
 
-repo_id = 'sjhallo07/marcos-mora-chatbot-multimodal'
-token = os.environ.get('HF_TOKEN')
+from dotenv import load_dotenv
+from huggingface_hub import HfApi
+
+load_dotenv()
+
+repo_id = os.environ.get("HF_SPACE_REPO_ID", "sjhallo07/marcos-mora-chatbot-multimodal")
+token = os.environ.get("HF_TOKEN")
+
 if not token:
-    print('HF_TOKEN not set')
+    print("HF_TOKEN not set")
     raise SystemExit(2)
+
 api = HfApi()
 try:
     info = api.space_info(repo_id, token=token)

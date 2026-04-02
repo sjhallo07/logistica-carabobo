@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 import asyncio
 from typing import List
+from urllib.parse import quote, unquote
 
 # Env
 IG_ACCESS_TOKEN = os.getenv("IG_ACCESS_TOKEN")
@@ -75,6 +76,113 @@ class RemoteMCPBridge:
         # unique
         return list(dict.fromkeys([c.upper() for c in candidates]))
 
+    def _normalize_instagram_username(self, profile_url: str) -> str:
+        value = (profile_url or "").strip()
+        if not value:
+            raise ValueError("empty_profile_url")
+
+        if value.startswith("@"):
+            value = value[1:]
+
+        if "instagram.com" in value:
+            value = value.rstrip("/")
+            value = value.split("/")[-1].split("?")[0]
+
+        value = value.strip().strip("/")
+        if not value:
+            raise ValueError("No username parsed")
+        return value
+
+    def _extract_posts_from_instagram_payload(self, payload: Dict[str, Any], limit: int, profile_url: str) -> List[Dict[str, Any]]:
+        posts: List[Dict[str, Any]] = []
+        edges = []
+
+        if not isinstance(payload, dict):
+            return posts
+
+        if (data := payload.get('items')):
+            edges = data
+        elif (graphql := payload.get('graphql')) and graphql.get('user'):
+            edges = graphql['user'].get('edge_owner_to_timeline_media', {}).get('edges', [])
+        elif (data2 := payload.get('data')) and isinstance(data2, dict):
+            user = data2.get('user', {})
+            if user:
+                edges = user.get('edge_owner_to_timeline_media', {}).get('edges', [])
+            if not edges and data2.get('xdt_api__v1__feed__user_timeline_graphql_connection'):
+                edges = data2.get('xdt_api__v1__feed__user_timeline_graphql_connection', {}).get('edges', [])
+
+        for it in edges[:limit]:
+            node = it.get('node', it) if isinstance(it, dict) else it
+            caption = ''
+            if isinstance(node, dict):
+                caption = node.get('caption') or node.get('edge_media_to_caption', {}).get('edges', [])
+                if isinstance(caption, list) and caption:
+                    caption = caption[0].get('node', {}).get('text', '')
+                if 'edge_media_to_caption' in node and not caption:
+                    cap_edges = node.get('edge_media_to_caption', {}).get('edges', [])
+                    if cap_edges:
+                        caption = cap_edges[0].get('node', {}).get('text', '')
+                permalink = node.get('permalink') or f"https://www.instagram.com/p/{node.get('shortcode', '')}/"
+                timestamp = node.get('taken_at_timestamp') or node.get('timestamp') or node.get('date')
+                if isinstance(timestamp, int):
+                    ts = datetime.utcfromtimestamp(timestamp).isoformat()
+                else:
+                    ts = timestamp or datetime.utcnow().isoformat()
+                codes = self._extract_coupons_from_text(caption)
+                posts.append({
+                    "permalink": permalink or profile_url,
+                    "timestamp": ts,
+                    "codes": codes,
+                    "caption": caption,
+                })
+
+        return posts
+
+    def _extract_search_results_from_html(self, html: str, limit: int) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        if not html:
+            return results
+
+        # Google-style results
+        google_pairs = re.findall(r'<a href="/url\?q=(https?://[^&\"]+)[^>]*>.*?<h3.*?>(.*?)</h3>', html, flags=re.IGNORECASE | re.DOTALL)
+        for link, title in google_pairs:
+            clean_title = re.sub('<[^<]+?>', '', title).strip()
+            if clean_title and link:
+                results.append({"title": clean_title, "link": link})
+            if len(results) >= limit:
+                return results[:limit]
+
+        # DuckDuckGo-style results
+        ddg_pairs = re.findall(r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, flags=re.IGNORECASE | re.DOTALL)
+        for raw_link, title in ddg_pairs:
+            link = raw_link
+            if 'uddg=' in raw_link:
+                link = unquote(raw_link.split('uddg=')[-1].split('&')[0])
+            clean_title = re.sub('<[^<]+?>', '', title).strip()
+            if clean_title and link.startswith('http'):
+                results.append({"title": clean_title, "link": link})
+            if len(results) >= limit:
+                break
+
+        # Unique by link preserving order
+        deduped = []
+        seen = set()
+        for item in results:
+            if item['link'] not in seen:
+                seen.add(item['link'])
+                deduped.append(item)
+        return deduped[:limit]
+
+    def _run_async(self, coro):
+        try:
+            return asyncio.run(coro)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(coro)
+            finally:
+                loop.close()
+
     def search_instagram_profile(self, profile_url: str, limit: int = 25) -> Dict[str, Any]:
         """Search a public Instagram profile for recent posts and extract coupon codes.
         Uses Instagram Graph API when IG_ACCESS_TOKEN is set; otherwise returns stubbed results.
@@ -99,9 +207,8 @@ class RemoteMCPBridge:
                 return {"source": "instagram_profile", "profile_url": profile_url, "results": results}
             except Exception as e:
                 return {"error": str(e), "stub": True}
-        # Fallback stub: return empty or a simulated coupon
-        simulated = [{"permalink": profile_url, "timestamp": datetime.utcnow().isoformat(), "codes": ["FIRST2026"], "caption": "¡Usa el código FIRST2026 para 20% off!"}]
-        return {"source": "instagram_profile_stub", "profile_url": profile_url, "results": simulated}
+        # Fallback to public web search instead of synthetic coupon data
+        return self._run_async(self.search_instagram_profile_public(profile_url, limit=limit))
 
     def search_instagram_hashtag(self, hashtag: str, limit: int = 25, since: str = None) -> Dict[str, Any]:
         """Search posts for a hashtag and extract coupon codes. Uses Graph API when configured, otherwise stub."""
@@ -145,18 +252,34 @@ class RemoteMCPBridge:
         Note: scraping Google is brittle and may be rate-limited; for production use use an API like SerpAPI or Google's Custom Search API.
         """
         try:
-            headers = {"User-Agent": "Mozilla/5.0 (compatible; Bot/0.1)"}
-            resp = httpx.get("https://www.google.com/search", params={"q": query, "num": limit}, headers=headers, timeout=10)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+
+            resp = httpx.get(
+                "https://www.google.com/search",
+                params={"q": query, "num": limit, "hl": "es"},
+                headers=headers,
+                timeout=15,
+                follow_redirects=True,
+            )
             resp.raise_for_status()
-            html = resp.text
-            # Very simple extraction of links via regex (best-effort)
-            links = re.findall(r'<a href="/url\?q=(https?://[^&\\"]+)', html)
-            titles = re.findall(r'<h3.*?>(.*?)</h3>', html)
-            results = []
-            for i, link in enumerate(links[:limit]):
-                title = titles[i] if i < len(titles) else link
-                results.append({"title": re.sub('<[^<]+?>', '', title), "link": link})
-            return {"source": "google_search", "query": query, "results": results}
+            results = self._extract_search_results_from_html(resp.text, limit=limit)
+            if results:
+                return {"source": "google_search", "query": query, "results": results}
+
+            # Fallback to DuckDuckGo HTML if Google markup yields no parseable results.
+            resp2 = httpx.get(
+                "https://html.duckduckgo.com/html/",
+                params={"q": query},
+                headers=headers,
+                timeout=15,
+                follow_redirects=True,
+            )
+            resp2.raise_for_status()
+            ddg_results = self._extract_search_results_from_html(resp2.text, limit=limit)
+            return {"source": "duckduckgo_search", "query": query, "results": ddg_results}
         except Exception as e:
             return {"error": str(e), "stub": True}
 
@@ -167,17 +290,22 @@ class RemoteMCPBridge:
         """
         # extract username
         try:
-            username = profile_url.rstrip('/').split('/')[-1].split('?')[0]
-            if username == "":
-                raise ValueError("No username parsed")
+            username = self._normalize_instagram_username(profile_url)
         except Exception:
             return {"error": "invalid_profile_url", "profile_url": profile_url}
 
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; Bot/0.1)", "Accept-Language": "en-US,en;q=0.9"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "X-IG-App-ID": "936619743392459",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": f"https://www.instagram.com/{username}/",
+        }
 
-        async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
-            # Try the JSON endpoint used by IG web (may work intermittently)
+        async with httpx.AsyncClient(timeout=15.0, headers=headers, follow_redirects=True) as client:
+            # Try current web profile endpoint first, then older JSON endpoints.
             json_urls = [
+                f"https://www.instagram.com/api/v1/users/web_profile_info/?username={quote(username)}",
                 f"https://www.instagram.com/{username}/?__a=1&__d=dis",
                 f"https://www.instagram.com/{username}/?__a=1"
             ]
@@ -192,41 +320,7 @@ class RemoteMCPBridge:
                             # sometimes returns JS; fall through
                             j = None
                         if j:
-                            # attempt to extract posts
-                            posts = []
-                            # different structures exist; try to find media nodes
-                            edges = []
-                            if isinstance(j, dict):
-                                # new structure may have 'items' or 'graphql'
-                                if (data := j.get('items')):
-                                    edges = data
-                                elif (graphql := j.get('graphql')) and graphql.get('user'):
-                                    edges = graphql['user'].get('edge_owner_to_timeline_media', {}).get('edges', [])
-                                elif (data2 := j.get('data')) and isinstance(data2, dict):
-                                    edges = data2.get('user', {}).get('edge_owner_to_timeline_media', {}).get('edges', [])
-                            # normalize edges
-                            for it in edges[:limit]:
-                                node = it.get('node', it) if isinstance(it, dict) else it
-                                caption = ''
-                                if isinstance(node, dict):
-                                    # caption in different places
-                                    caption = node.get('caption') or node.get('edge_media_to_caption', {}).get('edges', [])
-                                    if isinstance(caption, list) and caption:
-                                        caption = caption[0].get('node', {}).get('text', '')
-                                    if 'edge_media_to_caption' in node and not caption:
-                                        # legacy
-                                        cap_edges = node.get('edge_media_to_caption', {}).get('edges', [])
-                                        if cap_edges:
-                                            caption = cap_edges[0].get('node', {}).get('text', '')
-                                    permalink = node.get('permalink') or f"https://www.instagram.com/p/{node.get('shortcode', '')}/"
-                                    timestamp = node.get('taken_at_timestamp') or node.get('timestamp') or node.get('date')
-                                    if isinstance(timestamp, int):
-                                        ts = datetime.utcfromtimestamp(timestamp).isoformat()
-                                    else:
-                                        ts = timestamp
-                                    codes = self._extract_coupons_from_text(caption)
-                                    if codes:
-                                        posts.append({"permalink": permalink, "timestamp": ts, "codes": codes, "caption": caption})
+                            posts = self._extract_posts_from_instagram_payload(j, limit=limit, profile_url=profile_url)
                             if posts:
                                 await asyncio.sleep(delay)
                                 return {"source": "instagram_public_json", "username": username, "results": posts}
@@ -297,10 +391,14 @@ class RemoteMCPBridge:
                         if codes:
                             results.append({"permalink": profile_url, "timestamp": datetime.utcnow().isoformat(), "codes": codes, "caption": c})
 
-                # final fallback: return stub if nothing
+                # final fallback: return honest empty result instead of synthetic coupon data
                 if not results:
-                    simulated = [{"permalink": profile_url, "timestamp": datetime.utcnow().isoformat(), "codes": ["FIRST2026"], "caption": "¡Usa FIRST2026 para descuento!"}]
-                    return {"source": "instagram_public_html_stub", "username": username, "results": simulated}
+                    return {
+                        "source": "instagram_public_html",
+                        "username": username,
+                        "results": [],
+                        "note": "No public coupon-like matches were extracted from the profile response",
+                    }
                 await asyncio.sleep(delay)
                 return {"source": "instagram_public_html", "username": username, "results": results}
             except Exception as e:
