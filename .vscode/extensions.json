@@ -6,6 +6,7 @@
         "davidanson.vscode-markdownlint",
         "docsmsft.docs-markdown",
         "sixth.sixth-ai",
-        "anthropic.claude-code"
+        "anthropic.claude-code",
+        "ms-toolsai.vscode-jupyter-cell-tags"
     ]
 }

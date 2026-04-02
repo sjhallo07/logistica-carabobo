@@ -87,5 +87,6 @@
     "chat.statusWidget.anonymous": true,
     "terminal.integrated.enableWin32InputMode": true,
     "containers.commands.attach": "${containerCommand} exec -it ${containerId} ${shellCommand}",
-    "claudeCode.useTerminal": true
+    "claudeCode.useTerminal": true,
+    "workbench.editor.alwaysShowEditorActions": true
 }
