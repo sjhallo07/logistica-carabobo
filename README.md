@@ -45,6 +45,36 @@ A local MCP client configuration is included at `.vscode/mcp.json`. Important en
 
 The full `allowedModels` list is stored in `.vscode/mcp.json` in the repository.
 
+### Quick MCP setup for VS Code
+
+1. Install the MCP client extension or add the configuration file at `.vscode/mcp.json` (already included in this repo).
+
+2. The included `.vscode/mcp.json` points to the Supabase MCP proxy for your project. You can override `MCP_BASE_URL` in your `.env` or the Space environment variables to point to a different MCP.
+
+Example `.vscode/mcp.json` (already added):
+
+```json
+{
+  "servers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=picfkguawkzhbdvagcbi&features=branching%2Cfunctions%2Cdevelopment%2Cdebugging%2Cdatabase%2Caccount%2Cdocs%2Cstorage"
+    }
+  }
+}
+```
+
+### Install Agent Skills (optional)
+
+Agent Skills provide ready-made instructions and tooling to work with Supabase and MCP flows.
+Install with npx:
+
+```bash
+npx skills add supabase/agent-skills
+```
+
+This command will download the skill package into your workspace so the agent CLI can use it. If you prefer a GUI flow, some VS Code extensions provide a one-click "Add Skill" command.
+
 ## Scraping behavior and robots.txt
 
 The MCP bridge includes public scraping fallbacks when Instagram API credentials are not configured. The config file contains a `scraping.ignoreRobotsTxt` flag (set to `true`) to permit those fallbacks locally.

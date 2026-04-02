@@ -1,5 +1,13 @@
 {
 	"servers": {
+		"supabase": {
+			"type": "http",
+			"url": "https://mcp.supabase.com/mcp?project_ref=picfkguawkzhbdvagcbi&features=branching%2Cfunctions%2Cdevelopment%2Cdebugging%2Cdatabase%2Caccount%2Cdocs%2Cstorage"
+		}
+	}
+}
+{
+	"servers": {
 		"logisticaStudioLocal": {
 			"type": "http",
 			"url": "${input:localMcpUrl}"
